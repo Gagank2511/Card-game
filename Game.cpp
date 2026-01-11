@@ -24,8 +24,8 @@ Game::Game() : Game(GameConfig()) {
 // Constructor with custom config
 Game::Game(const GameConfig& gameConfig)
     : config(gameConfig),                    // Store the config
-      playerChips(gameConfig.startingChips), // Use config values
-      currentBet(0) {
+      playerPoints(0),
+      dealerPoints(0) {
     /*
      * SMART POINTER CREATION WITH make_unique:
      *
@@ -61,27 +61,24 @@ Game::Game(const GameConfig& gameConfig)
 
 void Game::displayWelcome() {
     cout << "\n========================================" << endl;
-    cout << "       " << config.welcomeMessage << endl;  // Use config message
+    cout << "       " << config.welcomeMessage << endl;
     cout << "========================================" << endl;
-    cout << "Try to get as close to 21 as possible!" << endl;
+    cout << "Goal: reach a total as close to 21 as possible without going over." << endl;
     cout << "Face cards = 10, Ace = 1 or 11" << endl;
-    cout << "You start with " << config.startingChips << " chips." << endl;
+    cout << "First to " << config.targetScore << " points wins the game." << endl;
     cout << "========================================\n" << endl;
 }
 
-void Game::placeBet() {
-    cout << "\nYou have " << playerChips << " chips." << endl;
-    cout << "Place your bet (" << config.minimumBet << "-" << playerChips << "): ";
+void Game::startRound() {
+    cout << "\nCurrent Score - You: " << playerPoints << ", Dealer: " << dealerPoints << endl;
+    cout << "First to " << config.targetScore << " points wins!" << endl;
+    cout << "Press Enter to start the round...";
 
-    // Input validation loop - uses config.minimumBet
-    while (!(cin >> currentBet) || currentBet < config.minimumBet || currentBet > playerChips) {
-        cout << "Invalid bet! Enter a number between " << config.minimumBet
-             << " and " << playerChips << ": ";
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-    }
+    // Wait for user input
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    cin.get();
 
-    cout << "Bet placed: " << currentBet << " chips.\n" << endl;
+    cout << "Round started!\n" << endl;
 }
 
 void Game::dealInitialCards() {
@@ -178,27 +175,38 @@ void Game::determineWinner() {
     cout << "=========================" << endl;
 
     if (playerScore > 21) {
-        cout << "You busted! Dealer wins." << endl;
-        playerChips -= currentBet;
+        cout << "You busted. Dealer wins this round." << endl;
     }
     else if (dealerScore > 21) {
-        cout << "Dealer busted! YOU WIN!" << endl;
-        playerChips += currentBet;
+        cout << "Dealer busted. You win this round." << endl;
     }
     else if (playerScore > dealerScore) {
-        cout << "YOU WIN!" << endl;
-        playerChips += currentBet;
+        cout << "You win this round." << endl;
     }
     else if (playerScore == dealerScore) {
-        cout << "It's a PUSH (tie). Bet returned." << endl;
-        // No chips gained or lost
+        cout << "It's a tie. No points awarded." << endl;
     }
     else {
-        cout << "Dealer wins." << endl;
-        playerChips -= currentBet;
+        cout << "Dealer wins this round." << endl;
     }
 
-    cout << "\nChips remaining: " << playerChips << endl;
+    // Points update logic
+    if (playerScore > 21) {
+        dealerPoints++;
+    }
+    else if (dealerScore > 21) {
+        playerPoints++;
+    }
+    else if (playerScore > dealerScore) {
+        playerPoints++;
+    }
+    else if (dealerScore > playerScore) {
+        dealerPoints++;
+    }
+    // tie: no points
+
+    cout << "Score -> You: " << playerPoints
+         << " | Dealer: " << dealerPoints << endl;
 }
 
 void Game::resetRound() {
@@ -232,17 +240,17 @@ void Game::resetRound() {
 void Game::play() {
     displayWelcome();
 
-    char playAgain;
+    char playAgain = 'y';
 
     // Main game loop - supports multiple rounds
     do {
-        // Check if player has chips
-        if (playerChips <= 0) {
-            cout << "\n*** You're out of chips! Game Over. ***" << endl;
+        // Check if someone has reached the target score
+        if (playerPoints >= config.targetScore || dealerPoints >= config.targetScore) {
+            cout << "\nGame Over!" << endl;
             break;
         }
 
-        placeBet();
+        startRound();
         dealInitialCards();
         playerTurn();
 
@@ -253,8 +261,8 @@ void Game::play() {
 
         determineWinner();
 
-        if (playerChips > 0) {
-            cout << "\nPlay another round? (y/n): ";
+        if (playerPoints < config.targetScore && dealerPoints < config.targetScore) {
+            cout << "\nPlay the next round? (y/n): ";
             cin >> playAgain;
 
             if (playAgain == 'y' || playAgain == 'Y') {
@@ -262,10 +270,21 @@ void Game::play() {
             }
         }
 
-    } while ((playAgain == 'y' || playAgain == 'Y') && playerChips > 0);
+    } while (playAgain == 'y' || playAgain == 'Y');
 
     cout << "\n========================================" << endl;
     cout << "Thanks for playing!" << endl;
-    cout << "Final chip count: " << playerChips << endl;
+    cout << "Final score -> You: " << playerPoints << " | Dealer: " << dealerPoints << endl;
+
+    if (playerPoints > dealerPoints) {
+        cout << "You win the game!" << endl;
+    }
+    else if (dealerPoints > playerPoints) {
+        cout << "Dealer wins the game!" << endl;
+    }
+    else {
+        cout << "The game ends in a tie!" << endl;
+    }
+
     cout << "========================================" << endl;
 }
