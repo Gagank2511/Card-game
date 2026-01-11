@@ -1,32 +1,35 @@
 /*
- * BLACKJACK CARD GAME
- * ===================
- * A console-based Blackjack game demonstrating:
+ * CARD GAME: BLACKJACK (SCORE-BASED)
+ * =================================
+ * A console-based card game based on Blackjack rules, demonstrating:
  *
  * MEMORY MANAGEMENT:
- * - Dynamic arrays for hand management
+ * - Dynamic memory for card handling
  * - Pointer-to-pointer (Card**) for polymorphic storage
+ * - Ownership transfer between Deck, Player, and Dealer
  * - Proper cleanup to prevent memory leaks
- * - Ownership transfer between Deck and Player
  *
  * DESIGN PATTERNS:
- * - Factory Pattern (CardFactory) - creates different card types
- * - Strategy Pattern (DrawStrategy) - interchangeable dealer AI
+ * - Factory Pattern (CardFactory): creates different card types
+ * - Strategy Pattern (DrawStrategy): interchangeable dealer AI
  *
  * OOP CONCEPTS:
  * - Inheritance (Card hierarchy, Player/Dealer)
  * - Polymorphism (virtual functions for card values)
- * - Encapsulation (private data, public interface)
+ * - Encapsulation (private data with public interfaces)
  *
  * MODERN C++:
  * - Smart pointers (unique_ptr for automatic memory management)
- * - Move semantics
- * - Lambda functions (functional programming)
  * - Exception handling (try-catch blocks)
  *
  * SCALABILITY:
- * - GameConfig structure for easy customisation
+ * - GameConfig structure for customisable settings
  * - Difficulty presets (Easy, Normal, Hard)
+ *
+ * DESIGN EVOLUTION:
+ * - Earlier versions used betting-style mechanics
+ * - Refactored into a score-based card game using points per round
+ * - Focuses on accessibility, rule-based play, and general usability
  *
  * Author: Student
  * Module: Advanced Programming
@@ -45,17 +48,15 @@ int main() {
     /*
      * USING GAMECONFIG FOR SCALABILITY:
      *
-     * You can create a game with different settings:
-     *
      * Option 1: Default game
      *   Game game;
      *
-     * Option 2: Custom config
+     * Option 2: Custom configuration
      *   GameConfig config;
      *   config.targetScore = 10;
      *   Game game(config);
      *
-     * Option 3: Use a preset
+     * Option 3: Difficulty presets
      *   Game game(createEasyConfig());
      *   Game game(createHardConfig());
      */
@@ -67,6 +68,6 @@ int main() {
     game.play();
 
     // Game destructor automatically cleans up all resources
-    // (Thanks to smart pointers - no memory leaks!)
+    // (Smart pointers prevent memory leaks)
     return 0;
 }
