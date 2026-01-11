@@ -1,4 +1,5 @@
 #include "Deck.h"
+#include "GameException.h"  // For EmptyDeckException
 #include <cstdlib>
 
 /*
@@ -35,9 +36,16 @@ Deck::Deck(int s) : capacity(s), currentIndex(0) {
 }
 
 Card* Deck::drawCard() {
-    // Safety check - return nullptr if deck is empty
+    /*
+     * EXCEPTION HANDLING:
+     * Instead of returning nullptr (which could cause crashes if not checked),
+     * we throw an exception. This is safer because:
+     * - The caller MUST handle it (or the programme stops)
+     * - It clearly signals that something went wrong
+     * - It separates error handling from normal code
+     */
     if (currentIndex >= capacity) {
-        return nullptr;
+        throw EmptyDeckException("Cannot draw - the deck has no cards left!");
     }
 
     // Return pointer to card and move index forward

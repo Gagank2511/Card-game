@@ -1,4 +1,5 @@
 #include "Game.h"
+#include "GameException.h"  // For custom exceptions
 #include <iostream>
 #include <limits>
 using namespace std;
@@ -8,53 +9,74 @@ using namespace std;
  * -------------------------
  * Main game controller that coordinates all game objects.
  * Demonstrates pointer management and object composition.
+ *
+ * SCALABILITY:
+ * The game now uses GameConfig to store all settings.
+ * This makes it easy to customise the game without changing this code.
  */
 
-// Starting chips for the player
-const int STARTING_CHIPS = 100;
-
-Game::Game() : playerChips(STARTING_CHIPS), currentBet(0) {
-    /*
-     * DYNAMIC OBJECT CREATION:
-     * - All game objects are created on the heap using 'new'
-     * - Game class owns these objects (responsible for deletion)
-     * - Pointers allow polymorphism (Dealer is-a Player)
-     */
-    deck = new Deck(52);    // Standard deck size
-    player = new Player();
-
-    // Create Dealer with AggressiveStrategy using smart pointer
-    dealer = new Dealer(make_unique<AggressiveStrategy>());
+// Default constructor - uses default config
+Game::Game() : Game(GameConfig()) {
+    // This calls the other constructor with a default GameConfig
+    // This pattern is called "constructor delegation"
 }
 
-Game::~Game() {
+// Constructor with custom config
+Game::Game(const GameConfig& gameConfig)
+    : config(gameConfig),                    // Store the config
+      playerChips(gameConfig.startingChips), // Use config values
+      currentBet(0) {
     /*
-     * CLEANUP - Following RAII principle:
-     * Game owns these objects, so Game must delete them.
-     * Order doesn't matter here as they don't depend on each other.
+     * SMART POINTER CREATION WITH make_unique:
+     *
+     * make_unique<Type>(args) creates a unique_ptr that owns a new object.
+     * This is safer than 'new' because:
+     * - Memory is automatically freed when the pointer goes out of scope
+     * - No need to remember to call 'delete'
+     * - Exception-safe (won't leak memory if an exception is thrown)
      */
-    delete deck;
-    delete player;
-    delete dealer;
+
+    // Create deck using config setting
+    deck = make_unique<Deck>(config.deckSize);
+    player = make_unique<Player>();
+
+    // Create Dealer with strategy based on config
+    // This shows how config makes the game SCALABLE and CUSTOMISABLE
+    if (config.useAggressiveDealer) {
+        dealer = make_unique<Dealer>(make_unique<AggressiveStrategy>());
+    } else {
+        dealer = make_unique<Dealer>(make_unique<ConservativeStrategy>());
+    }
 }
+
+/*
+ * DESTRUCTOR - Now empty!
+ *
+ * With smart pointers, we don't need to manually delete anything.
+ * When Game is destroyed, the unique_ptrs automatically delete their objects.
+ * This is called RAII (Resource Acquisition Is Initialisation).
+ *
+ * The destructor is set to '= default' in the header file.
+ */
 
 void Game::displayWelcome() {
     cout << "\n========================================" << endl;
-    cout << "       BLACKJACK - CARD GAME" << endl;
+    cout << "       " << config.welcomeMessage << endl;  // Use config message
     cout << "========================================" << endl;
     cout << "Try to get as close to 21 as possible!" << endl;
     cout << "Face cards = 10, Ace = 1 or 11" << endl;
-    cout << "You start with " << STARTING_CHIPS << " chips." << endl;
+    cout << "You start with " << config.startingChips << " chips." << endl;
     cout << "========================================\n" << endl;
 }
 
 void Game::placeBet() {
     cout << "\nYou have " << playerChips << " chips." << endl;
-    cout << "Place your bet (1-" << playerChips << "): ";
+    cout << "Place your bet (" << config.minimumBet << "-" << playerChips << "): ";
 
-    // Input validation loop
-    while (!(cin >> currentBet) || currentBet < 1 || currentBet > playerChips) {
-        cout << "Invalid bet! Enter a number between 1 and " << playerChips << ": ";
+    // Input validation loop - uses config.minimumBet
+    while (!(cin >> currentBet) || currentBet < config.minimumBet || currentBet > playerChips) {
+        cout << "Invalid bet! Enter a number between " << config.minimumBet
+             << " and " << playerChips << ": ";
         cin.clear();
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
     }
@@ -95,12 +117,20 @@ void Game::playerTurn() {
         cin >> choice;
 
         if (choice == 'h' || choice == 'H') {
-            Card* newCard = deck->drawCard();
-            if (newCard != nullptr) {
+            /*
+             * EXCEPTION HANDLING WITH TRY-CATCH:
+             * We wrap the drawCard() call in a try block because it might throw
+             * an EmptyDeckException. If it does, we catch it and handle it nicely.
+             */
+            try {
+                Card* newCard = deck->drawCard();  // This might throw an exception
                 cout << "You drew: " << newCard->getName() << endl;
                 player->addCard(newCard);
-            } else {
-                cout << "Deck is empty!" << endl;
+            }
+            catch (const EmptyDeckException& e) {
+                // Catch the exception and display a friendly message
+                cout << "Sorry! " << e.what() << endl;
+                cout << "You must stand." << endl;
                 break;
             }
         } else {
@@ -114,11 +144,20 @@ void Game::dealerTurn() {
     cout << "\n-------- DEALER'S TURN --------" << endl;
 
     while (dealer->shouldDraw() && !deck->isEmpty()) {
-        Card* newCard = deck->drawCard();
-        if (newCard != nullptr) {
+        /*
+         * TRY-CATCH FOR DEALER'S DRAW:
+         * Same exception handling as player's turn.
+         * If deck is empty, dealer must stop drawing.
+         */
+        try {
+            Card* newCard = deck->drawCard();
             cout << "Dealer draws: " << newCard->getName() << endl;
             dealer->addCard(newCard);
             dealer->showHand();
+        }
+        catch (const EmptyDeckException& e) {
+            cout << "Deck is empty - dealer must stand." << endl;
+            break;  // Exit the loop
         }
     }
 
@@ -164,21 +203,29 @@ void Game::determineWinner() {
 
 void Game::resetRound() {
     /*
-     * MEMORY MANAGEMENT FOR NEW ROUND:
-     * - Delete old player and dealer (they own their cards)
-     * - Create fresh player and dealer for new round
-     * - Recreate deck if running low on cards
+     * RESETTING FOR NEW ROUND WITH SMART POINTERS:
+     *
+     * With unique_ptr, we use 'reset()' to replace the object.
+     * reset() does two things:
+     * 1. Deletes the old object automatically
+     * 2. Takes ownership of a new object
+     *
+     * This is much cleaner than manual delete + new!
      */
-    delete player;
-    delete dealer;
 
-    player = new Player();
-    dealer = new Dealer(make_unique<AggressiveStrategy>());
+    // Reset player for new round
+    player.reset(new Player());
 
-    // Recreate deck if less than 10 cards remain
-    if (deck->getSize() < 10) {
-        delete deck;
-        deck = new Deck(52);
+    // Reset dealer using config setting (SCALABILITY)
+    if (config.useAggressiveDealer) {
+        dealer.reset(new Dealer(make_unique<AggressiveStrategy>()));
+    } else {
+        dealer.reset(new Dealer(make_unique<ConservativeStrategy>()));
+    }
+
+    // Recreate deck if below threshold (using config)
+    if (deck->getSize() < config.reshuffleThreshold) {
+        deck.reset(new Deck(config.deckSize));
     }
 }
 
