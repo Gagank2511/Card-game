@@ -38,13 +38,13 @@ public:
     }
 };
 
-// Exception thrown when player runs out of chips
-class OutOfChipsException : public std::exception {
+// Exception thrown when player runs out of points
+class OutOfPointsException : public std::exception {
 private:
     std::string message;
 
 public:
-    OutOfChipsException(const std::string& msg = "You have run out of chips!")
+    OutOfPointsException(const std::string& msg = "You have run out of points!")
         : message(msg) {}
 
     const char* what() const noexcept override {
@@ -52,13 +52,13 @@ public:
     }
 };
 
-// Exception thrown when an invalid bet is placed
-class InvalidBetException : public std::exception {
+// Exception thrown when an invalid round is started
+class InvalidRoundException : public std::exception {
 private:
     std::string message;
 
 public:
-    InvalidBetException(const std::string& msg = "Invalid bet amount!")
+    InvalidRoundException(const std::string& msg = "Invalid round start!")
         : message(msg) {}
 
     const char* what() const noexcept override {
