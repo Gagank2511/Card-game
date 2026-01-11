@@ -42,17 +42,27 @@ The game will start and guide you through a simple Blackjack session.
 
 ## Project Structure
 
-- `Card.h` / `Card.cpp`: Represents a playing card with suit and rank.
-- `Deck.h` / `Deck.cpp`: Manages a deck of cards, including shuffling and dealing.
-- `Player.h` / `Player.cpp`: Represents a player in the game.
-- `Dealer.h` / `Dealer.cpp`: Represents the dealer.
-- `Game.h` / `Game.cpp`: Contains the main game logic.
-- `Strategy.h` / `Strategy.cpp`: Defines strategies for playing.
-- `CardFactory.h` / `CardFactory.cpp`: Factory for creating cards.
-- `GameConfig.h`: Configuration settings for the game.
-- `GameException.h`: Custom exceptions for the game.
-- `main.cpp`: Entry point of the application.
+- `src/`: Source code files (.cpp)
+  - `main.cpp`: Entry point of the application.
+  - `Card.cpp`: Represents a playing card with suit and rank.
+  - `Deck.cpp`: Manages a deck of cards, including shuffling and dealing.
+  - `Player.cpp`: Represents a player in the game.
+  - `Dealer.cpp`: Represents the dealer.
+  - `Game.cpp`: Contains the main game logic.
+  - `Strategy.cpp`: Defines strategies for playing.
+  - `CardFactory.cpp`: Factory for creating cards.
+- `include/`: Header files (.h)
+  - `Card.h`: Header for Card class.
+  - `Deck.h`: Header for Deck class.
+  - `Player.h`: Header for Player class.
+  - `Dealer.h`: Header for Dealer class.
+  - `Game.h`: Header for Game class.
+  - `Strategy.h`: Header for Strategy class.
+  - `CardFactory.h`: Header for CardFactory class.
+  - `GameConfig.h`: Configuration settings for the game.
+  - `GameException.h`: Custom exceptions for the game.
 - `CMakeLists.txt`: Build configuration file.
+- `README.md`: This file.
 
 ## Contributing
 
