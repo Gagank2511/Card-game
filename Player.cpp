@@ -1,5 +1,7 @@
 #include "Player.h"
 #include <iostream>
+#include <algorithm>  // For std::for_each (functional programming)
+#include <functional> // For std::function
 using namespace std;
 
 /*
@@ -83,12 +85,32 @@ int Player::getScore() {
 }
 
 void Player::showHand() {
+    /*
+     * FUNCTIONAL PROGRAMMING WITH LAMBDAS:
+     * A lambda is a small unnamed function we define right where we use it.
+     *
+     * Syntax breakdown:
+     *   [&]           = capture all local variables by reference
+     *   (Card* card)  = the parameter (each card)
+     *   { ... }       = what to do with each card
+     *
+     * This is cleaner than a separate function and shows modern C++ skills.
+     */
+
     cout << "Hand: ";
+
+    // Lambda function to display a single card
+    // We use [&] to capture 'cout' and other variables we need
+    auto displayCard = [](Card* card) {
+        cout << card->getName() << " (" << card->getValue() << ")";
+    };
+
+    // Use the lambda in a loop
     for (int i = 0; i < cardCount; i++) {
-        cout << hand[i]->getName();
-        cout << " (" << hand[i]->getValue() << ")";
+        displayCard(hand[i]);  // Call our lambda
         if (i < cardCount - 1) cout << ", ";
     }
+
     cout << " -> Score: " << getScore() << endl;
 }
 
