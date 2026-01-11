@@ -5,16 +5,26 @@
 #include "Player.h"
 #include "Dealer.h"
 #include "Strategy.h"
+#include "GameConfig.h"  // For game configuration
+#include <memory>        // For smart pointers
 
 /*
  * GAME CLASS
  * ----------
  * Orchestrates the Blackjack game and manages all game objects.
  *
- * POINTER USAGE:
- * - Uses raw pointers for Deck, Player, and Dealer objects
- * - Demonstrates ownership and lifetime management
- * - Game is responsible for creating and destroying these objects
+ * SMART POINTER USAGE:
+ * We use std::unique_ptr instead of raw pointers for automatic memory management.
+ *
+ * WHY SMART POINTERS:
+ * - They automatically delete the object when no longer needed
+ * - No need to write 'delete' manually (prevents memory leaks)
+ * - The code is safer and cleaner
+ * - They follow the RAII principle (Resource Acquisition Is Initialisation)
+ *
+ * UNIQUE_PTR vs SHARED_PTR:
+ * - unique_ptr: Only ONE owner (used here because Game owns these objects alone)
+ * - shared_ptr: Multiple owners can share the same object
  *
  * FEATURES:
  * - Betting system with chips for realism and originality
@@ -27,14 +37,21 @@
  */
 class Game {
 private:
-    Deck* deck;         // Pointer to the deck of cards
-    Player* player;     // Pointer to the human player
-    Dealer* dealer;     // Pointer to the AI dealer
+    /*
+     * SMART POINTERS:
+     * unique_ptr automatically manages memory - no manual delete needed!
+     * When Game is destroyed, these objects are automatically cleaned up.
+     */
+    std::unique_ptr<Deck> deck;       // Smart pointer to deck
+    std::unique_ptr<Player> player;   // Smart pointer to player
+    std::unique_ptr<Dealer> dealer;   // Smart pointer to dealer
 
     int playerChips;    // Player's current chip count
     int currentBet;     // Current round's bet amount
 
-    // Private helper methods for cleaner code organization
+    GameConfig config;  // Stores all game settings (SCALABILITY)
+
+    // Private helper methods for cleaner code organisation
     void displayWelcome();
     void placeBet();
     void dealInitialCards();
@@ -44,8 +61,13 @@ private:
     void resetRound();
 
 public:
+    // Default constructor - uses default settings
     Game();
-    ~Game();
+
+    // Constructor with custom config - allows customisation (SCALABILITY)
+    Game(const GameConfig& gameConfig);
+
+    ~Game() = default;  // Smart pointers handle cleanup automatically!
     void play();        // Main game loop
 };
 
