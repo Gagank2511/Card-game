@@ -52,7 +52,7 @@ int main() {
      *
      * Option 2: Custom config
      *   GameConfig config;
-     *   config.startingChips = 500;
+     *   config.targetScore = 10;
      *   Game game(config);
      *
      * Option 3: Use a preset
